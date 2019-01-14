@@ -1,3 +1,4 @@
+let global_timers=[];
 (function($){
     function show(msg){
         console.log(msg);
@@ -12,36 +13,37 @@
         let imageInfos=[];
         for(let i=0;i<arr.length;i++){
             let imageInfo={};
-            imageInfo["src"]=$(arr[i]).attr("src");
+            imageInfo["src"]=$(arr[i]).attr("data-src");
             imageInfos.push(imageInfo);
         }
         return imageInfos;
     }
     $.fn.PPTSlider = function(opts){
         opts = $.extend({}, $.fn.PPTSlider.opts, opts);
-        show(opts);
-        show(this);
+        //show(opts);
+        //show(this);
         this.each(function(position,element){
             //$(element).append("hello"+position);
             //获取元素的所有孩子
             var childArr=$(element).children();
             //提取所有孩子标签中的有效信息
             let imageInfos=getImageInfos(childArr);
-            show(imageInfos);
+            //show(imageInfos);
             //移除所有原始元素
             $(element).children().remove();
             //生成新的元素
             //图片部分
-            $(element).append("<div class='pptSlider-images'></div>")
+            $(element).append("<div class='pptSlider-images'></div>");
+            let width=$(element).width();
             for(let i=0;i<imageInfos.length;i++){
-                $($(element).children(".pptSlider-images")[0]).append("<img src=\""+imageInfos[i]["src"]+"\"  style='display:none;'/>");
+                $($(element).children(".pptSlider-images")[0]).append("<img src='"+imageInfos[i]["src"]+"' width='"+"100%"+"' style='display:none;'/>");
             }
             //按钮部分
             $(element).append("<div style='width:100%;' class='btn-operations'>" +
-                "<img src='images/left_1.png' class='btn-left'>"+
-                "<img src='images/pause_1.png' class='btn-pause'>"+
-                "<img src='images/continue_1.png' class='btn-continue'>"+
-                "<img src='images/right_1.png' class='btn-right' style='float:right;'>"+
+                "<a href='#' class='btn-left'><span class='pptslider-btn glyphicon glyphicon-step-backward'></span></a>"+
+                "<a href='#' class='btn-pause'><span class='pptslider-btn glyphicon glyphicon-pause'></span></a>"+
+                "<a href='#' class='btn-continue'><span class='pptslider-btn glyphicon glyphicon-play'></span></a>"+
+                "<a href='#' class='btn-right' style='float:right;'><span class='pptslider-btn glyphicon glyphicon-step-forward'></span></a>"+
                 "</div>");
             //为按钮添加事件
             function showPauseButton(){
@@ -68,9 +70,13 @@
             childArr=$($(element).children(".pptSlider-images")[0]).children();
             let currentIndex=0;
             let autoPlay=true;
-            visualise(childArr,1);
+            visualise(childArr,0);
             var autoPlayer;
             function startAutoPlay(){
+                //清除所有全局定时器
+                for(let i=0;i<global_timers.length;i++){
+                    clearInterval(global_timers[i]);
+                }
                 autoPlayer=setInterval(function(){
                     //alert("hello");
                     if(autoPlay){
@@ -79,6 +85,7 @@
 
                     }
                 },opts.duration);
+                global_timers.push(autoPlayer);
                 showPauseButton();
             }
             function stopAutoPlay(){
@@ -94,7 +101,9 @@
             function playPrevious(){
                     currentIndex=(currentIndex-1);
                     if(currentIndex<0){
-                        alert("已到达起始页，为您跳转至本组ppt末尾页");
+                        if(opts.leftEndAlert){
+                            alert("已到达起始页，为您跳转至本组ppt末尾页");
+                        }
                         currentIndex=childArr.length-1;
                     }
                     visualise(childArr,currentIndex);
@@ -106,7 +115,9 @@
             function playNext(){
                 currentIndex++;
                 if(currentIndex>=childArr.length){
-                    alert("已到达末尾页，为您跳转至本组ppt首页");
+                    if(opts.rightEndAlert){
+                        alert("已到达末尾页，为您跳转至本组ppt首页");
+                    }
                     currentIndex=0;
                 }
                 visualise(childArr,currentIndex);
@@ -118,6 +129,12 @@
             }else{
                 stopAutoPlay();
             }
+            //监听window resize事件
+            window.onresize = () => {
+                return (() => {
+                    show("resized...");
+                })();
+            };
         });
     };
     $.fn.PPTSlider.opts = {
@@ -125,5 +142,7 @@
         dir: null,
         isAnimate: false,
         duration:3000,
+        leftEndAlert:false,
+        rightEndAlert:false,
     };
 })(jQuery);
